@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# coding=utf8
+# -*- coding: utf8 -*-
+# vim: set fileencoding=utf8 :
+# author @jonwincus
+
+import sys
+import requests
+from bs4 import BeautifulSoup
+import re
+
+class Config():
+    pass
+
+def main(c):
+    login_data={'j_username':c.username,'j_password':c.password,'Ingresar':'Ingresar'}
+    headers = {
+            'Host': c.host,
+            'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            }
+    
+    response = requests.post(c.login_url, headers=headers, data=login_data, allow_redirects=False)
+    cookies = response.cookies
+
+    response = requests.get(c.main_url, cookies=cookies)
+    soup = BeautifulSoup(response.text)
+
+    regex = re.compile(c.regexp)
+    for tag in soup.find_all('td'):
+        r = regex.search(str(tag))
+        if r:
+            sys.stdout.write(c.output % r.groups()[0])
+
+if __name__ == '__main__':
+    
+    c = Config()
+    c.username   = "username"
+    c.password   = "password"
+    c.host       = "www.miredbus.com.ar"
+    c.cardID     = "ID"
+    c.login_url  = "http://%s/j_spring_security_check" % c.host
+    c.main_url   = "http://%s/showTarjeta.htm?id=%s" % (c.host, c.cardID)
+    c.regexp     = '(\$\s+\d+\.\d+)'
+    c.output     = '#[fg=blue,bold]%s#[default]\n'
+
+    main(c)
